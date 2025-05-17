@@ -7,6 +7,7 @@ import math
 import time
 
 running = True
+crop = True
 
 HEAD_H = 0.4445
 HEAD_W = 0.2775
@@ -18,13 +19,18 @@ delta_x, delta_y = 0.0, 0.0
 head_h, head_w = 0.0, 0.0
 l_eye_h, l_eye_pct, l_eye_w = 0.0, 0.0, 0.0
 r_eye_h, r_eye_pct, r_eye_w = 0.0, 0.0, 0.0
+l_eye_center_x, l_eye_center_y = 0.0, 0.0
+r_eye_center_x, r_eye_center_y = 0.0, 0.0
+l_iris_x, l_iris_y, r_iris_x, r_iris_y = 0.0, 0.0, 0.0, 0.0
 mouth_h, mouth_pct = 0.0, 0.0
 
 def face_detect_loop():
-    global running
+    global running, crop
     global delta_x, delta_y
     global head_h, head_w
     global l_eye_h, l_eye_pct, l_eye_w, r_eye_h, r_eye_pct, r_eye_w
+    global l_eye_center_x, l_eye_center_y, r_eye_center_x, r_eye_center_y
+    global l_iris_x, l_iris_y, r_iris_x, r_iris_y
     global mouth_h
     
     cap = cv2.VideoCapture(4)
@@ -77,6 +83,7 @@ def face_detect_loop():
         
         frame = cv2.resize(frame, (target_frame_width, target_frame_height))
 
+        # Only process every N frames
         if frame_count2 % process_every_n_frames == 0:
             frame_count += 1
             elapsed_time = time.time() - start_time
@@ -86,18 +93,19 @@ def face_detect_loop():
                 print(f"FPS: {fps:.2f}")
                 frame_count = 0
                 start_time = time.time()
-            # Only process every N frames
+            
             # Calculate cropping coordinates
-            h, w = frame.shape[:2]
-            center_x, center_y = w // 2, (h // 2) - 30
-            radius_x, radius_y = int(w / (2 * zoom_factor)), int(h / (2 * zoom_factor))
+            if crop:
+                h, w = frame.shape[:2]
+                center_x, center_y = w // 2, (h // 2) - 30
+                radius_x, radius_y = int(w / (2 * zoom_factor)), int(h / (2 * zoom_factor))
 
-            min_x, max_x = center_x - radius_x, center_x + radius_x
-            min_y, max_y = center_y - radius_y, center_y + radius_y
+                min_x, max_x = center_x - radius_x, center_x + radius_x
+                min_y, max_y = center_y - radius_y, center_y + radius_y
 
-            # Crop and resize (simulate zoom)
-            cropped = frame[min_y:max_y, min_x:max_x]
-            frame = cv2.resize(cropped, (w, h))
+                # Crop and resize (simulate zoom)
+                cropped = frame[min_y:max_y, min_x:max_x]
+                frame = cv2.resize(cropped, (w, h))
 
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             result = face_mesh.process(rgb_frame)
@@ -124,15 +132,75 @@ def face_detect_loop():
                     l_eye_pct = (l_eye_h/head_h) * (HEAD_H/EYE_H)
                     r_eye_pct = (r_eye_h/head_h) * (HEAD_H/EYE_H)
 
+                    l_eye_center_x, l_eye_center_y = utils.get_intersection(
+                        *utils.get_pos(face_landmarks.landmark[l_outer_edge]),
+                        *utils.get_pos(face_landmarks.landmark[l_inner_edge]),
+                        *utils.get_pos(face_landmarks.landmark[l_upper_lid]),
+                        *utils.get_pos(face_landmarks.landmark[l_lower_lid])
+                        )
+                    l_eye_center = (l_eye_center_x, l_eye_center_y)
+                    
+                    r_eye_center_x, r_eye_center_y = utils.get_intersection(
+                        *utils.get_pos(face_landmarks.landmark[r_outer_edge]),
+                        *utils.get_pos(face_landmarks.landmark[r_inner_edge]),
+                        *utils.get_pos(face_landmarks.landmark[r_upper_lid]),
+                        *utils.get_pos(face_landmarks.landmark[r_lower_lid])
+                        )
+                    r_eye_center = (r_eye_center_x, r_eye_center_y)
+                    
+                    l_iris_x = (
+                        (
+                            math.dist(utils.get_pos(face_landmarks.landmark[l_outer_edge]),
+                                      utils.get_pos(face_landmarks.landmark[l_iris])) -
+                            math.dist(utils.get_pos(face_landmarks.landmark[l_inner_edge]),
+                                      utils.get_pos(face_landmarks.landmark[l_iris]))
+                        )
+                        /
+                        (l_eye_w / 2)
+                    )
+                    
+                    l_iris_y = (
+                        (
+                            math.dist(utils.get_pos(face_landmarks.landmark[l_upper_lid]),
+                                      utils.get_pos(face_landmarks.landmark[l_iris])) -
+                            math.dist(utils.get_pos(face_landmarks.landmark[l_lower_lid]),
+                                      utils.get_pos(face_landmarks.landmark[l_iris]))
+                        )
+                        /
+                        (l_eye_h / 2)
+                    )
+                    
+                    r_iris_x = (
+                        (
+                            math.dist(utils.get_pos(face_landmarks.landmark[r_outer_edge]),
+                                      utils.get_pos(face_landmarks.landmark[r_iris])) -
+                            math.dist(utils.get_pos(face_landmarks.landmark[r_inner_edge]),
+                                      utils.get_pos(face_landmarks.landmark[r_iris]))
+                        )
+                        /
+                        (r_eye_w / 2)
+                    )
+                    
+                    r_iris_y = (
+                        (
+                            math.dist(utils.get_pos(face_landmarks.landmark[r_upper_lid]),
+                                      utils.get_pos(face_landmarks.landmark[r_iris])) -
+                            math.dist(utils.get_pos(face_landmarks.landmark[r_lower_lid]),
+                                      utils.get_pos(face_landmarks.landmark[r_iris]))
+                        )
+                        /
+                        (r_eye_h / 2)
+                    )
+
                     mouth_h = math.dist(utils.get_pos(face_landmarks.landmark[lower_lip]), utils.get_pos(face_landmarks.landmark[upper_lip]))
                     mouth_pct = (mouth_h/head_h) * (HEAD_H/MOUTH)
 
                     # DEBUG
-                    cv2.putText(frame, f"delta_y: {delta_y:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 4)
-                    cv2.putText(frame, f"delta_y: {delta_y:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+                    cv2.putText(frame, f"l_iris_y: {l_iris_y:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 4)
+                    cv2.putText(frame, f"l_iris_y: {l_iris_y:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
                     
-                    cv2.putText(frame, f"delta_x: {delta_x:.2f}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 4)
-                    cv2.putText(frame, f"delta_x: {delta_x:.2f}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+                    cv2.putText(frame, f"r_iris_y: {r_iris_y:.2f}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 4)
+                    cv2.putText(frame, f"r_iris_y: {r_iris_y:.2f}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
 
                     cv2.putText(frame, f"l_eye_pct: {l_eye_pct:.2f}", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 4)
                     cv2.putText(frame, f"l_eye_pct: {l_eye_pct:.2f}", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
@@ -180,16 +248,11 @@ head_img = pygame.image.load('images/head.png').convert_alpha()
 head_rect = head_img.get_rect()
 
 l_eye_img = pygame.image.load('images/l_eye.png').convert_alpha()
-l_eye_rect = l_eye_img.get_rect()
 l_eye_img2 = pygame.image.load('images/l_eye2.png').convert_alpha()
-l_eye_rect2 = l_eye_img2.get_rect()
 l_eye_img3 = pygame.image.load('images/l_eye3.png').convert_alpha()
-l_eye_rect3 = l_eye_img3.get_rect()
 
 r_eye_img = pygame.image.load('images/r_eye.png').convert_alpha()
-r_eye_rect = r_eye_img.get_rect()
 r_eye_img2 = pygame.image.load('images/r_eye2.png').convert_alpha()
-r_eye_rect2 = r_eye_img2.get_rect()
 r_eye_img3 = pygame.image.load('images/r_eye3.png').convert_alpha()
 r_eye_rect3 = r_eye_img3.get_rect()
 
@@ -207,32 +270,47 @@ while running:
     head_pos = (screen_width//2 - head_rect.width//2 - delta_x * 50,
                 screen_height//2 - head_rect.height//2 - delta_y * 300)
     screen.blit(head_img, head_pos)
-    
+
     if l_eye_pct > 0.51:
-        l_eye_pos = (head_rect.width//4 - l_eye_rect.width//2 + head_pos[0] - delta_x*70,
-                    head_rect.height//2 - l_eye_rect.height//2 + head_pos[1] - delta_y*400)
-        screen.blit(l_eye_img, l_eye_pos)
+        l_eye_img_render = l_eye_img
+        l_eye_rect = l_eye_img.get_rect()
     elif l_eye_pct > 0.28:
-        l_eye_pos = (head_rect.width//4 - l_eye_rect2.width//2 + head_pos[0] - delta_x*70,
-                    head_rect.height//2 - l_eye_rect2.height//2 + head_pos[1] - delta_y*400)
-        screen.blit(l_eye_img2, l_eye_pos)
+        l_eye_img_render = l_eye_img2
+        l_eye_rect = l_eye_img2.get_rect()
     else:
-        l_eye_pos = (head_rect.width//4 - l_eye_rect3.width//2 + head_pos[0] - delta_x*70,
-                    head_rect.height//2 - l_eye_rect3.height//2 + head_pos[1] - delta_y*400)
-        screen.blit(l_eye_img3, l_eye_pos)
+        l_eye_img_render = l_eye_img3
+        l_eye_rect = l_eye_img3.get_rect()
+    
+    l_eye_pos = (head_rect.width//4 - l_eye_rect.width//2 + head_pos[0] - delta_x*70,
+                 head_rect.height//2 - l_eye_rect.height//2 + head_pos[1] - delta_y*400)
+    screen.blit(l_eye_img_render, l_eye_pos)
     
     if r_eye_pct > 0.51:
-        r_eye_pos = (3*head_rect.width//4 - r_eye_rect.width//2 + head_pos[0] - delta_x*70,
-                    head_rect.height//2 - r_eye_rect.height//2 + head_pos[1] - delta_y*400)
-        screen.blit(r_eye_img, r_eye_pos)
+        r_eye_img_render = r_eye_img
+        r_eye_rect = r_eye_img.get_rect()
     elif r_eye_pct > 0.28:
-        r_eye_pos = (3*head_rect.width//4 - r_eye_rect2.width//2 + head_pos[0] - delta_x*70,
-                    head_rect.height//2 - r_eye_rect2.height//2 + head_pos[1] - delta_y*400)
-        screen.blit(r_eye_img2, r_eye_pos)
+        r_eye_img_render = r_eye_img2
+        r_eye_rect = r_eye_img2.get_rect()
     else:
-        r_eye_pos = (3*head_rect.width//4 - r_eye_rect3.width//2 + head_pos[0] - delta_x*70,
-                    head_rect.height//2 - r_eye_rect3.height//2 + head_pos[1] - delta_y*400)
-        screen.blit(r_eye_img3, r_eye_pos)
+        r_eye_img_render = r_eye_img3
+        r_eye_rect = r_eye_img3.get_rect()
+
+    r_eye_pos = (3*head_rect.width//4 - r_eye_rect.width//2 + head_pos[0] - delta_x*70,
+                head_rect.height//2 - r_eye_rect.height//2 + head_pos[1] - delta_y*400)
+    screen.blit(r_eye_img_render, r_eye_pos)
+
+    l_iris_pos = (
+        (l_eye_pos[0] + l_eye_rect.width//2 + l_iris_x * (l_eye_rect.width//2)),
+        (l_eye_pos[1] + l_eye_rect.height//2 + l_iris_y * (l_eye_rect.height//2))
+    )
+    
+    r_iris_pos = (
+        (r_eye_pos[0] + r_eye_rect.width//2 - r_iris_x * (r_eye_rect.width//2)),
+        (r_eye_pos[1] + r_eye_rect.height//2 + r_iris_y * (r_eye_rect.height//2))
+    )
+
+    pygame.draw.circle(screen, (255, 0, 0), l_iris_pos, 20, 5)
+    pygame.draw.circle(screen, (255, 0, 0), r_iris_pos, 20, 5)
 
     pygame.display.flip()
     clock.tick(30)
