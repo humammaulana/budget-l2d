@@ -254,7 +254,11 @@ l_eye_img3 = pygame.image.load('images/l_eye3.png').convert_alpha()
 r_eye_img = pygame.image.load('images/r_eye.png').convert_alpha()
 r_eye_img2 = pygame.image.load('images/r_eye2.png').convert_alpha()
 r_eye_img3 = pygame.image.load('images/r_eye3.png').convert_alpha()
-r_eye_rect3 = r_eye_img3.get_rect()
+
+l_iris_img = pygame.image.load('images/l_iris.png').convert_alpha()
+r_iris_img = pygame.image.load('images/r_iris.png').convert_alpha()
+l_iris_rect = l_iris_img.get_rect()
+r_iris_rect = r_iris_img.get_rect()
 
 clock = pygame.time.Clock()
 
@@ -300,17 +304,23 @@ while running:
     screen.blit(r_eye_img_render, r_eye_pos)
 
     l_iris_pos = (
-        (l_eye_pos[0] + l_eye_rect.width//2 + l_iris_x * (l_eye_rect.width//2)),
-        (l_eye_pos[1] + l_eye_rect.height//2 + l_iris_y * (l_eye_rect.height//2))
+        (l_eye_pos[0] + l_eye_rect.width//2 + l_iris_x * (l_eye_rect.width//2) - l_iris_rect.width//2),
+        (l_eye_pos[1] + l_eye_rect.height//2 + l_iris_y * (l_eye_rect.height//2) - l_iris_rect.height//2)
     )
-    
-    r_iris_pos = (
-        (r_eye_pos[0] + r_eye_rect.width//2 - r_iris_x * (r_eye_rect.width//2)),
-        (r_eye_pos[1] + r_eye_rect.height//2 + r_iris_y * (r_eye_rect.height//2))
-    )
+    screen.set_clip(pygame.Rect(*l_eye_pos, *l_eye_rect[-2:]))
+    screen.blit(l_iris_img, l_iris_pos)
+    screen.set_clip(None)
 
-    pygame.draw.circle(screen, (255, 0, 0), l_iris_pos, 20, 5)
-    pygame.draw.circle(screen, (255, 0, 0), r_iris_pos, 20, 5)
+    r_iris_pos = (
+        (r_eye_pos[0] + r_eye_rect.width//2 - r_iris_x * (r_eye_rect.width//2) - r_iris_rect.width//2),
+        (r_eye_pos[1] + r_eye_rect.height//2 + r_iris_y * (r_eye_rect.height//2) - r_iris_rect.height//2)
+    )
+    screen.set_clip(pygame.Rect(*r_eye_pos, *r_eye_rect[-2:]))
+    screen.blit(r_iris_img, r_iris_pos)
+    screen.set_clip(None)
+
+    # pygame.draw.circle(screen, (255, 0, 0), l_iris_pos, 20, 5)
+    # pygame.draw.circle(screen, (255, 0, 0), r_iris_pos, 20, 5)
 
     pygame.display.flip()
     clock.tick(30)
