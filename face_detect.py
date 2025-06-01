@@ -260,6 +260,9 @@ r_iris_img = pygame.image.load('images/r_iris.png').convert_alpha()
 l_iris_rect = l_iris_img.get_rect()
 r_iris_rect = r_iris_img.get_rect()
 
+l_eye_mask = pygame.Surface(l_eye_img.get_size(), pygame.SRCALPHA)
+r_eye_mask = pygame.Surface(r_eye_img.get_size(), pygame.SRCALPHA)
+
 clock = pygame.time.Clock()
 
 while running:
@@ -270,58 +273,67 @@ while running:
             sys.exit()
     
     screen.fill((0, 0, 0))
+    l_eye_mask.fill((0, 0, 0, 0))
+    r_eye_mask.fill((0, 0, 0, 0))
 
     head_pos = (screen_width//2 - head_rect.width//2 - delta_x * 50,
                 screen_height//2 - head_rect.height//2 - delta_y * 300)
     screen.blit(head_img, head_pos)
 
+# ==== LEFT EYE RENDER
     if l_eye_pct > 0.51:
         l_eye_img_render = l_eye_img
         l_eye_rect = l_eye_img.get_rect()
+        l_eye_mask = pygame.Surface(l_eye_img.get_size(), pygame.SRCALPHA)
     elif l_eye_pct > 0.28:
         l_eye_img_render = l_eye_img2
         l_eye_rect = l_eye_img2.get_rect()
+        l_eye_mask = pygame.Surface(l_eye_img2.get_size(), pygame.SRCALPHA)
     else:
         l_eye_img_render = l_eye_img3
         l_eye_rect = l_eye_img3.get_rect()
+        l_eye_mask = pygame.Surface(l_eye_img3.get_size(), pygame.SRCALPHA)
     
     l_eye_pos = (head_rect.width//4 - l_eye_rect.width//2 + head_pos[0] - delta_x*70,
                  head_rect.height//2 - l_eye_rect.height//2 + head_pos[1] - delta_y*400)
-    screen.blit(l_eye_img_render, l_eye_pos)
     
+    l_iris_pos = (
+        (l_eye_rect.width//2 + l_iris_x * (l_eye_rect.width//2) - l_iris_rect.width//2),
+        (l_eye_rect.height//2 + l_iris_y * (l_eye_rect.height//2) - l_iris_rect.height//2)
+    )
+    l_eye_mask.blit(l_iris_img, l_iris_pos)
+    l_eye_mask.blit(l_eye_img_render, (0,0), special_flags=pygame.BLEND_RGBA_MULT)
+    screen.blit(l_eye_img_render, l_eye_pos)
+    screen.blit(l_eye_mask, l_eye_pos)
+
+# === RIGHT EYE RENDER
     if r_eye_pct > 0.51:
         r_eye_img_render = r_eye_img
         r_eye_rect = r_eye_img.get_rect()
+        r_eye_mask = pygame.Surface(r_eye_img.get_size(), pygame.SRCALPHA)
     elif r_eye_pct > 0.28:
         r_eye_img_render = r_eye_img2
         r_eye_rect = r_eye_img2.get_rect()
+        r_eye_mask = pygame.Surface(r_eye_img2.get_size(), pygame.SRCALPHA)
     else:
         r_eye_img_render = r_eye_img3
         r_eye_rect = r_eye_img3.get_rect()
+        r_eye_mask = pygame.Surface(r_eye_img3.get_size(), pygame.SRCALPHA)
 
     r_eye_pos = (3*head_rect.width//4 - r_eye_rect.width//2 + head_pos[0] - delta_x*70,
                 head_rect.height//2 - r_eye_rect.height//2 + head_pos[1] - delta_y*400)
-    screen.blit(r_eye_img_render, r_eye_pos)
 
-    l_iris_pos = (
-        (l_eye_pos[0] + l_eye_rect.width//2 + l_iris_x * (l_eye_rect.width//2) - l_iris_rect.width//2),
-        (l_eye_pos[1] + l_eye_rect.height//2 + l_iris_y * (l_eye_rect.height//2) - l_iris_rect.height//2)
-    )
-    screen.set_clip(pygame.Rect(*l_eye_pos, *l_eye_rect[-2:]))
-    screen.blit(l_iris_img, l_iris_pos)
-    screen.set_clip(None)
 
     r_iris_pos = (
-        (r_eye_pos[0] + r_eye_rect.width//2 - r_iris_x * (r_eye_rect.width//2) - r_iris_rect.width//2),
-        (r_eye_pos[1] + r_eye_rect.height//2 + r_iris_y * (r_eye_rect.height//2) - r_iris_rect.height//2)
+        (r_eye_rect.width//2 - r_iris_x * (r_eye_rect.width//2) - r_iris_rect.width//2),
+        (r_eye_rect.height//2 + r_iris_y * (r_eye_rect.height//2) - r_iris_rect.height//2)
     )
-    screen.set_clip(pygame.Rect(*r_eye_pos, *r_eye_rect[-2:]))
-    screen.blit(r_iris_img, r_iris_pos)
-    screen.set_clip(None)
+    r_eye_mask.blit(r_iris_img, r_iris_pos)
+    r_eye_mask.blit(r_eye_img_render, (0,0), special_flags=pygame.BLEND_RGBA_MULT)
+    screen.blit(r_eye_img_render, r_eye_pos)
+    screen.blit(r_eye_mask, r_eye_pos)
 
-    # pygame.draw.circle(screen, (255, 0, 0), l_iris_pos, 20, 5)
-    # pygame.draw.circle(screen, (255, 0, 0), r_iris_pos, 20, 5)
-
+# ==== CLOSE LOOP
     pygame.display.flip()
     clock.tick(30)
 
