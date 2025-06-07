@@ -244,19 +244,19 @@ screen_width, screen_height = 640, 480
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Budget L2D")
 
-head_img = pygame.image.load('images/head.png').convert_alpha()
+head_img = pygame.image.load('avatar/head.png').convert_alpha()
 head_rect = head_img.get_rect()
 
-l_eye_img = pygame.image.load('images/l_eye.png').convert_alpha()
-l_eye_img2 = pygame.image.load('images/l_eye2.png').convert_alpha()
-l_eye_img3 = pygame.image.load('images/l_eye3.png').convert_alpha()
+l_eye_img = pygame.image.load('avatar/l_eye.png').convert_alpha()
+l_eye_img2 = pygame.image.load('avatar/l_eye2.png').convert_alpha()
+l_eye_img3 = pygame.image.load('avatar/l_eye3.png').convert_alpha()
 
-r_eye_img = pygame.image.load('images/r_eye.png').convert_alpha()
-r_eye_img2 = pygame.image.load('images/r_eye2.png').convert_alpha()
-r_eye_img3 = pygame.image.load('images/r_eye3.png').convert_alpha()
+r_eye_img = pygame.image.load('avatar/r_eye.png').convert_alpha()
+r_eye_img2 = pygame.image.load('avatar/r_eye2.png').convert_alpha()
+r_eye_img3 = pygame.image.load('avatar/r_eye3.png').convert_alpha()
 
-l_iris_img = pygame.image.load('images/l_iris.png').convert_alpha()
-r_iris_img = pygame.image.load('images/r_iris.png').convert_alpha()
+l_iris_img = pygame.image.load('avatar/l_iris.png').convert_alpha()
+r_iris_img = pygame.image.load('avatar/r_iris.png').convert_alpha()
 l_iris_rect = l_iris_img.get_rect()
 r_iris_rect = r_iris_img.get_rect()
 
