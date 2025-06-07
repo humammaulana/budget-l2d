@@ -1,9 +1,6 @@
-# ignored workspace
-parallax-face-tracker.code-workspace
-
 # ignored folders
 .vs/
 __pycache__/
 venv/
 images/
-!images/avatar
+!images/avatar/
